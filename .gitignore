@@ -1,0 +1,61 @@
+# .gitignore — EV ChargeSmart
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.venv/
+venv/
+env/
+.env
+!.env.example
+
+# ── Models (large binaries) ───────────────────────────────────────────────────
+models/rf_model.pkl
+models/lstm_model.h5
+models/scaler.pkl
+models/label_encoder.pkl
+models/training_metrics.json
+
+# ── Data ──────────────────────────────────────────────────────────────────────
+data/raw/*.csv
+data/raw/*.zip
+data/processed/*.csv
+data/real_time_cache/*.json
+
+# ── Notebooks ─────────────────────────────────────────────────────────────────
+notebooks/.ipynb_checkpoints/
+notebooks/**/.ipynb_checkpoints/
+
+# ── Frontend ──────────────────────────────────────────────────────────────────
+frontend/node_modules/
+frontend/build/
+frontend/.env.local
+
+# ── Testing ───────────────────────────────────────────────────────────────────
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# ── Docker ────────────────────────────────────────────────────────────────────
+.docker/
+
+# ── IDE ───────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+logs/
+config/config.py

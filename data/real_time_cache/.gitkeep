@@ -1,0 +1,3 @@
+# Real-time API response cache (TTL: 5 minutes).
+# Files auto-created by data_collection.py.
+# Safe to delete — will be regenerated on next API call.

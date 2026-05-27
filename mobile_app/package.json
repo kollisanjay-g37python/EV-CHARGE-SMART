@@ -1,0 +1,29 @@
+{
+  "name": "ev-charging-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "description": "EV Charging Smart System — Capacitor Mobile App",
+  "scripts": {
+    "build":        "cd ../frontend && npm run build && cp -r build ../mobile_app/www",
+    "cap:add:android": "npx cap add android",
+    "cap:add:ios":     "npx cap add ios",
+    "cap:sync":        "npx cap sync",
+    "cap:run:android": "npx cap run android",
+    "cap:run:ios":     "npx cap run ios",
+    "cap:open:android":"npx cap open android",
+    "cap:open:ios":    "npx cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/core":               "^6.1.0",
+    "@capacitor/geolocation":        "^6.0.0",
+    "@capacitor/local-notifications":"^6.0.0",
+    "@capacitor/network":            "^6.0.0",
+    "@capacitor/preferences":        "^6.0.0",
+    "@capacitor/push-notifications": "^6.0.0",
+    "@capacitor/splash-screen":      "^6.0.0",
+    "@capacitor/status-bar":         "^6.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.0"
+  }
+}

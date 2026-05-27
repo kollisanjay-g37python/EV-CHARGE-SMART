@@ -1,0 +1,33 @@
+{
+  "appId": "com.evchargesmart.app",
+  "appName": "EV ChargeSmart",
+  "webDir": "frontend/build",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "backgroundColor": "#0a0e1a",
+      "androidSplashResourceName": "splash",
+      "androidScaleType": "CENTER_CROP"
+    },
+    "Geolocation": {
+      "permissions": ["location"]
+    },
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    }
+  },
+  "android": {
+    "buildOptions": {
+      "keystorePath": "android/keystore.jks",
+      "keystoreAlias": "evchargesmart"
+    }
+  },
+  "ios": {
+    "scheme": "EVChargeSmart",
+    "contentInset": "automatic"
+  }
+}

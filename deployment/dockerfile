@@ -1,0 +1,62 @@
+# ─── EV ChargeSmart — Multi-stage Dockerfile ─────────────────────────────────
+# Stage 1: Builder  (installs all dependencies)
+# Stage 2: Runtime  (lean image for production)
+
+# ── Stage 1: Builder ──────────────────────────────────────────────────────────
+FROM python:3.11-slim AS builder
+
+WORKDIR /app
+
+# System deps for numerical libraries
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential gcc g++ libhdf5-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python packages into /install for copy to runtime
+COPY deployment/requirements.txt .
+RUN pip install --upgrade pip && \
+    pip install --prefix=/install --no-cache-dir -r requirements.txt
+
+# ── Stage 2: Runtime ──────────────────────────────────────────────────────────
+FROM python:3.11-slim AS runtime
+
+WORKDIR /app
+
+# Copy installed packages
+COPY --from=builder /install /usr/local
+
+# Copy project source
+COPY config/         ./config/
+COPY src/            ./src/
+COPY backend/        ./backend/
+COPY streamlit_app/  ./streamlit_app/
+COPY alerts/         ./alerts/
+COPY models/         ./models/
+COPY data/           ./data/
+
+# Create non-root user
+RUN useradd -m -u 1001 evcharger && chown -R evcharger:evcharger /app
+USER evcharger
+
+# ── Environment ───────────────────────────────────────────────────────────────
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV API_HOST=0.0.0.0
+ENV API_PORT=8000
+
+# Expose ports
+EXPOSE 8000   
+# FastAPI
+EXPOSE 8501   
+# Streamlit
+
+# ── Healthcheck ───────────────────────────────────────────────────────────────
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD python -c "import requests; requests.get('http://localhost:8000/health').raise_for_status()"
+
+# ── Default: start FastAPI ────────────────────────────────────────────────────
+CMD ["uvicorn", "backend.app:app", \
+     "--host", "0.0.0.0", \
+     "--port", "8000", \
+     "--workers", "2", \
+     "--log-level", "info"]

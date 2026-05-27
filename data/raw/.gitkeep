@@ -1,0 +1,5 @@
+# This directory stores raw data files:
+# - stations.csv         (from Open Charge Map API)
+# - charging_sessions.csv (session history / synthetic)
+# These files are excluded from git (.gitignore).
+# Run: python src/data_collection.py  to generate them.

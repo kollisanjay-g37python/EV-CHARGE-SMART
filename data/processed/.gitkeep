@@ -1,0 +1,5 @@
+# This directory stores processed/feature-engineered CSVs:
+# - sessions_clean.csv   (after data_preprocessing.py)
+# - features.csv         (after feature_engineering.py)
+# These files are excluded from git.
+# Run: python src/train.py  to generate them.

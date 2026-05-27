@@ -1,0 +1,53 @@
+# deployment/docker-compose.prod.yml
+# Production overrides for docker-compose.yml.
+# Usage: docker-compose -f docker-compose.yml -f deployment/docker-compose.prod.yml up -d
+
+version: "3.9"
+
+services:
+
+  api:
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 2G
+    command:
+      - uvicorn
+      - backend.app:app
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8000"
+      - --workers
+      - "4"
+      - --log-level
+      - warning
+    environment:
+      - LOG_LEVEL=WARNING
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ev-api.rule=Host(`api.evchargesmart.io`)"
+      - "traefik.http.routers.ev-api.tls=true"
+      - "traefik.http.services.ev-api.loadbalancer.server.port=8000"
+
+  streamlit:
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1G
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ev-ui.rule=Host(`demo.evchargesmart.io`)"
+      - "traefik.http.routers.ev-ui.tls=true"
+
+  redis:
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    command: redis-server --appendonly yes --maxmemory 400mb --maxmemory-policy allkeys-lru

@@ -1,0 +1,123 @@
+# docker-compose.yml
+# Spins up the full EV ChargeSmart stack:
+#   api        — FastAPI backend  (port 8000)
+#   streamlit  — Streamlit UI     (port 8501)
+#   redis      — Prediction cache (port 6379)
+#   frontend   — React app        (port 3000)  [optional, use "make frontend"]
+#
+# Usage:
+#   docker-compose up            # all services
+#   docker-compose up api        # API only
+#   docker-compose --profile dev up  # include frontend dev server
+
+version: "3.9"
+
+services:
+
+  # ── Redis cache ─────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: ev_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - ev_net
+
+  # ── FastAPI backend ──────────────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: deployment/dockerfile
+      target: runtime
+    container_name: ev_api
+    ports:
+      - "8000:8000"
+    environment:
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - OPEN_CHARGE_MAP_API_KEY=${OPEN_CHARGE_MAP_API_KEY:-demo}
+      - TOMTOM_API_KEY=${TOMTOM_API_KEY:-demo}
+      - OPENWEATHER_API_KEY=${OPENWEATHER_API_KEY:-demo}
+      - GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY:-demo}
+      - REDIS_URL=redis://redis:6379/0
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health').raise_for_status()"]
+      interval: 30s
+      timeout: 10s
+      start_period: 20s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - ev_net
+    command: ["uvicorn", "backend.app:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+
+  # ── Streamlit UI ─────────────────────────────────────────────────────────────
+  streamlit:
+    build:
+      context: .
+      dockerfile: deployment/dockerfile
+      target: runtime
+    container_name: ev_streamlit
+    ports:
+      - "8501:8501"
+    environment:
+      - API_HOST=api
+      - API_PORT=8000
+      - OPEN_CHARGE_MAP_API_KEY=${OPEN_CHARGE_MAP_API_KEY:-demo}
+      - OPENWEATHER_API_KEY=${OPENWEATHER_API_KEY:-demo}
+      - TOMTOM_API_KEY=${TOMTOM_API_KEY:-demo}
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - ev_net
+    command: ["streamlit", "run", "streamlit_app/app.py",
+              "--server.port=8501", "--server.address=0.0.0.0",
+              "--server.headless=true", "--browser.gatherUsageStats=false"]
+
+  # ── React frontend (dev, optional) ──────────────────────────────────────────
+  frontend:
+    image: node:20-alpine
+    container_name: ev_frontend
+    profiles: ["dev"]
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000/api/v1
+      - CHOKIDAR_USEPOLLING=true
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: sh -c "npm install && npm start"
+    depends_on:
+      - api
+    networks:
+      - ev_net
+
+volumes:
+  redis_data:
+
+networks:
+  ev_net:
+    driver: bridge

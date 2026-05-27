@@ -1,0 +1,91 @@
+# deployment/docker-compose.yml
+# Full-stack EV Charging Smart System
+# Usage: docker-compose up --build
+
+version: "3.9"
+
+services:
+
+  # ── FastAPI Backend ────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ..
+      dockerfile: deployment/dockerfile
+      target: backend
+    container_name: ev_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENCHARGE_API_KEY=${OPENCHARGE_API_KEY:-}
+      - TOMTOM_API_KEY=${TOMTOM_API_KEY:-}
+      - OPENWEATHER_API_KEY=${OPENWEATHER_API_KEY:-}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
+      - ALERT_WAIT_THRESHOLD=${ALERT_WAIT_THRESHOLD:-20}
+      - PYTHONPATH=/app
+    volumes:
+      - ev_models:/app/models
+      - ev_data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - ev_net
+
+  # ── Streamlit Dashboard ────────────────────────────────────────────────────
+  streamlit:
+    build:
+      context: ..
+      dockerfile: deployment/dockerfile
+      target: backend
+    container_name: ev_streamlit
+    command: >
+      streamlit run streamlit_app/app.py
+        --server.address 0.0.0.0
+        --server.port 8501
+        --server.headless true
+        --browser.gatherUsageStats false
+    ports:
+      - "8501:8501"
+    environment:
+      - REACT_APP_API_URL=http://backend:8000/api/v1
+      - PYTHONPATH=/app
+    depends_on:
+      backend:
+        condition: service_healthy
+    volumes:
+      - ev_models:/app/models
+      - ev_data:/app/data
+    restart: unless-stopped
+    networks:
+      - ev_net
+
+  # ── Nginx Reverse Proxy ────────────────────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: ev_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend
+      - streamlit
+    restart: unless-stopped
+    networks:
+      - ev_net
+
+volumes:
+  ev_models:
+    driver: local
+  ev_data:
+    driver: local
+
+networks:
+  ev_net:
+    driver: bridge
