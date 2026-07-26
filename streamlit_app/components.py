@@ -77,7 +77,8 @@ def render_demand_chart(hourly_data: pd.DataFrame, current_hour: int) -> None:
 
         fig = go.Figure()
         colors = [
-            "#00d4aa" if h == current_hour else "#00d4aa44"
+            "#00d4aa" if h == current_hour else "rgba(0,212,170,0.25)"
+            #"#00d4aa" if h == current_hour else "#00d4aa44"
             for h in hourly_data["hour"]
         ]
         fig.add_trace(go.Bar(
@@ -271,7 +272,7 @@ def render_recommendation_cards(scores) -> None:
                 st.progress(float(comp), text=f"Score: {comp:.2f}")
             with col_action:
                 st.markdown(
-                    f"<div style='background:#00d4aa22; border:1px solid #00d4aa44; "
+                    f"<div style='background:rgba(0,212,170,0.13);border:1px solid rgba(0,212,170,0.27); "
                     f"border-radius:6px; padding:6px 10px; text-align:center; "
                     f"font-size:11px; font-weight:700; color:#00d4aa;'>"
                     f"{action}</div>",
